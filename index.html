@@ -14,13 +14,22 @@
     <!-- <script src="js/STLLoader.js"></script> -->
     <!-- <script src="js/STLExporter.js"></script> -->
     <script src="js/FAVLoader.js"></script>
-    <!-- <script src="js/FAVExporter.js"></script> -->
+    <script src="js/FAVExporter.js"></script>
     <script>
       var container;
 			var camera, cameraTarget, scene, renderer;
+      var objects = [];
 
 			init();
 			animate();
+
+      function deg2rad(deg) {
+        return deg*THREE.Math.DEG2RAD;
+      }
+
+      function exportFAV() {
+
+      }
 
 			function init() {
 				container = document.createElement('div');
@@ -71,8 +80,28 @@
         // FAV file
 
 				var loader = new THREE.FAVLoader();
-				loader.load('data/ChessKing_Color_reso1_v1.fav', function (geometry) {
+				loader.load('data/ChessKing_Color_reso1_v1.fav', function (volumeList) {
+          for (var voxels of volumeList) {
+            var voxSize = 0.01;
 
+            var geometry = new THREE.BoxGeometry(voxSize, voxSize, voxSize);
+            var material = new THREE.MeshPhongMaterial({color:0xaaaaaa});
+            var group = new THREE.Group();
+
+            for (var i = 0; i < voxels.data.length; i++) {
+              var pos = voxels.data[i];
+              var cube = new THREE.Mesh(geometry, material);
+              cube.position.set(pos[0]*voxSize, pos[1]*voxSize, pos[2]*voxSize);
+              cube.castShadow = true;
+        			cube.receiveShadow = true;
+              group.add(cube);
+            }
+
+            group.position.set(0, -0.5, 0);
+            group.rotation.set(deg2rad(-90), 0, 0);
+            scene.add(group);
+            objects.push(group);
+          }
 				});
 
 

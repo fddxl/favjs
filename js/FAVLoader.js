@@ -48,23 +48,39 @@ THREE.FAVLoader.prototype = {
 			return buffer;
 		}
 
-    function parseVoxelMap(voxelMapElement) {
+    function parseDimension(dimensionElement) {
+      const x = parseInt(dimensionElement.querySelector('x').innerHTML);
+      const y = parseInt(dimensionElement.querySelector('y').innerHTML);
+      const z = parseInt(dimensionElement.querySelector('z').innerHTML);
+      return {'x': x, 'y': y, 'z': z};
+    }
+
+    function parseVoxelMap(voxelMapElement, dimension) {
       const layerElements = voxelMapElement.querySelectorAll('layer');
 
       const bitPerVoxel = parseInt(voxelMapElement.getAttribute('bit_per_voxel'));
       const voxelLength = bitPerVoxel / 4;
 
-      for (var el of layerElements) {
-        const matched = el.innerHTML.match(/<!\[CDATA\[(.+)\]\]>/);
-        const value = matched[1];
-        const voxels = value.match(/.{2}/g);
+      var voxelMap = [];
+      const regexp = new RegExp('.{' + voxelLength + '}', 'g');
 
-        for (var i = 0; i < voxels.length; i++) {
-          const v = parseInt(voxels[i], 16);
+      for (var z = 0; z < layerElements.length; z++) {
+        const matched = layerElements[z].innerHTML.match(/<!\[CDATA\[(.+)\]\]>/);
+        const cdataContent = matched[1];
+        const voxelValues = cdataContent.match(regexp);
+
+        for (var i = 0; i < voxelValues.length; i++) {
+          const x = Math.floor(i / dimension.x);
+          const y = i % dimension.x;
+          const v = parseInt(voxelValues[i], 16);
+
           if (v >= 1) {
+            voxelMap.push([x, y, z]);
           }
         }
       }
+
+      return voxelMap;
     }
 
     function parse(data) {
@@ -72,11 +88,25 @@ THREE.FAVLoader.prototype = {
       const dom = parser.parseFromString(data, 'text/xml');
       const objectElements = dom.querySelectorAll('object');
 
+      var volumeList = [];
+
       for (var el of objectElements) {
+        const gridElement = el.querySelector('grid');
+        const dimensionElement = gridElement.querySelector('dimension');
+        const dimension = parseDimension(dimensionElement);
+
         const structureElement = el.querySelector('structure');
         const voxelMapElement = structureElement.querySelector('voxel_map');
-        parseVoxelMap(voxelMapElement);
+        const voxelMap = parseVoxelMap(voxelMapElement, dimension);
+
+        const volume = {
+          'dimension': dimension,
+          'data': voxelMap
+        };
+        volumeList.push(volume);
       }
+
+      return volumeList;
     }
 
     return parse(ensureString(data));
