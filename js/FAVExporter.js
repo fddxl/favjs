@@ -22,9 +22,9 @@ THREE.FAVExporter.prototype = {
 
     // get voxel space size
     for (var i = 0; i < nonMergedVoxels.length; i++) {
-      var x = nonMergedVoxels[i].position.x / voxelSize;
-      var y = nonMergedVoxels[i].position.y / voxelSize;
-      var z = nonMergedVoxels[i].position.z / voxelSize;
+      var x = Math.round(nonMergedVoxels[i].position.x / voxelSize);
+      var y = Math.round(nonMergedVoxels[i].position.y / voxelSize);
+      var z = Math.round(nonMergedVoxels[i].position.z / voxelSize);
 
       if (max_x < x) max_x = x;
       if (max_y < y) max_y = y;
@@ -56,16 +56,15 @@ THREE.FAVExporter.prototype = {
     var diffz = min_z;
 
     for (var i = 0; i < nonMergedVoxels.length; i++) {
-      var x = nonMergedVoxels[i].position.x / voxelSize - diffx;
-      var y = nonMergedVoxels[i].position.y / voxelSize - diffy;
-      var z = nonMergedVoxels[i].position.z / voxelSize - diffz;
+      var x = Math.round(nonMergedVoxels[i].position.x / voxelSize - diffx);
+      var y = Math.round(nonMergedVoxels[i].position.y / voxelSize - diffy);
+      var z = Math.round(nonMergedVoxels[i].position.z / voxelSize - diffz);
       var index = this.getIndex(x, y, z, new_dimx, new_dimy, new_dimz);
 
       voxels[index] = 1;
       colors_r[index] = Math.round(nonMergedVoxels[i].material.color.r * 255);
       colors_g[index] = Math.round(nonMergedVoxels[i].material.color.g * 255);
       colors_b[index] = Math.round(nonMergedVoxels[i].material.color.b * 255);
-      count += 1;
     }
 
     return {
