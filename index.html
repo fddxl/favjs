@@ -7,18 +7,29 @@
       body {
         margin: 0;
       }
+      .buttons {
+        position: absolute;
+      }
     </style>
   </head>
   <body>
+    <div class="buttons">
+      <button type="button" onclick="exportFAV()">Export FAV</button>
+    </div>
+    <script src="js/XMLWriter-1.0.0-min.js"></script>
+    <script src="js/FileSaver.js"></script>
     <script src="js/three.min.js"></script>
+    <script src="js/OrbitControls.js"></script>
     <!-- <script src="js/STLLoader.js"></script> -->
     <!-- <script src="js/STLExporter.js"></script> -->
     <script src="js/FAVLoader.js"></script>
     <script src="js/FAVExporter.js"></script>
     <script>
       var container;
-			var camera, cameraTarget, scene, renderer;
+			var camera, controls, scene, renderer;
       var objects = [];
+      var voxSize = 0.01;
+      var exporter = new THREE.FAVExporter();
 
 			init();
 			animate();
@@ -28,7 +39,13 @@
       }
 
       function exportFAV() {
-
+        for (var object of objects) {
+          var data = exporter.parse(object.cubeGroup.children, object.dimension, voxSize);
+          var blob = new Blob([data], {type: 'application/xml'});
+          var date = new Date();
+          var timestamp = [date.getHours(), date.getMinutes(), date.getSeconds()].join('');
+          saveAs(blob, 'sample_' + timestamp + '.fav');
+        }
       }
 
 			function init() {
@@ -37,8 +54,7 @@
 
 				camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 1, 15);
 				camera.position.set(3, 0.15, 3);
-
-				cameraTarget = new THREE.Vector3(0, - 0.25, 0);
+        controls = new THREE.OrbitControls(camera);
 
 				scene = new THREE.Scene();
 				scene.background = new THREE.Color(0x72645b);
@@ -82,11 +98,9 @@
 				var loader = new THREE.FAVLoader();
 				loader.load('data/ChessKing_Color_reso1_v1.fav', function (volumeList) {
           for (var voxels of volumeList) {
-            var voxSize = 0.01;
-
             var geometry = new THREE.BoxGeometry(voxSize, voxSize, voxSize);
             var material = new THREE.MeshPhongMaterial({color:0xaaaaaa});
-            var group = new THREE.Group();
+            var cubeGroup = new THREE.Group();
 
             for (var i = 0; i < voxels.data.length; i++) {
               var pos = voxels.data[i];
@@ -94,13 +108,16 @@
               cube.position.set(pos[0]*voxSize, pos[1]*voxSize, pos[2]*voxSize);
               cube.castShadow = true;
         			cube.receiveShadow = true;
-              group.add(cube);
+              cubeGroup.add(cube);
             }
 
-            group.position.set(0, -0.5, 0);
-            group.rotation.set(deg2rad(-90), 0, 0);
-            scene.add(group);
-            objects.push(group);
+            cubeGroup.position.set(0, -0.5, 0);
+            cubeGroup.rotation.set(deg2rad(-90), 0, 0);
+            scene.add(cubeGroup);
+            objects.push({
+              'cubeGroup': cubeGroup,
+              'dimension': voxels.dimension
+            });
           }
 				});
 
@@ -155,15 +172,8 @@
 
 			function animate() {
 				requestAnimationFrame(animate);
-				render();
-			}
-
-			function render() {
-				var timer = Date.now() * 0.0001;
-				camera.position.x = Math.cos(timer) * 3;
-				camera.position.z = Math.sin(timer) * 3;
-				camera.lookAt(cameraTarget);
-				renderer.render(scene, camera);
+        controls.update();
+        renderer.render(scene, camera);
 			}
     </script>
   </body>
