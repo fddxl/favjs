@@ -50,9 +50,9 @@ THREE.FAVLoader.prototype = {
 		}
 
     function parseDimension(dimensionElement) {
-      const x = parseInt(dimensionElement.querySelector('x').innerHTML);
-      const y = parseInt(dimensionElement.querySelector('y').innerHTML);
-      const z = parseInt(dimensionElement.querySelector('z').innerHTML);
+      const x = parseInt(dimensionElement.querySelector('x, X').innerHTML);
+      const y = parseInt(dimensionElement.querySelector('y, Y').innerHTML);
+      const z = parseInt(dimensionElement.querySelector('z, Z').innerHTML);
       return {'x': x, 'y': y, 'z': z};
     }
 
@@ -80,8 +80,33 @@ THREE.FAVLoader.prototype = {
           }
         }
       }
-
       return voxelMap;
+    }
+
+    function parseColorMap(colorMapElement, dimension) {
+      const layerElements = colorMapElement.querySelectorAll('layer');
+      const colorMode = colorMapElement.getAttribute('color_mode');
+
+      var colorLength;
+      switch (colorMode) {
+        case 'RGB':
+          colorLength = 6;
+          break;
+        case 'GrayScale':
+          colorLength = 2;
+          break;
+      }
+
+      var colorMap = [];
+      const regexp = new RegExp('.{' + colorLength + '}', 'g');
+
+      for (var z = 0; z < layerElements.length; z++) {
+        const matched = layerElements[z].innerHTML.match(/<!\[CDATA\[(.+)\]\]>/);
+        const cdataContent = matched[1];
+        const colorValues = cdataContent.match(regexp);
+        colorMap = colorMap.concat(colorValues);
+      }
+      return colorMap;
     }
 
     function parse(data) {
@@ -100,9 +125,13 @@ THREE.FAVLoader.prototype = {
         const voxelMapElement = structureElement.querySelector('voxel_map');
         const voxelMap = parseVoxelMap(voxelMapElement, dimension);
 
+        const colorMapElement = structureElement.querySelector('color_map');
+        const colorMap = parseColorMap(colorMapElement, dimension);
+
         const volume = {
           'dimension': dimension,
-          'data': voxelMap
+          'voxels': voxelMap,
+          'colors': colorMap
         };
         volumeList.push(volume);
       }

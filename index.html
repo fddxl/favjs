@@ -6,6 +6,7 @@
     <style>
       body {
         margin: 0;
+        overflow: hidden;
       }
       .buttons {
         position: absolute;
@@ -16,6 +17,7 @@
     <div class="buttons">
       <button type="button" onclick="exportFAV()">Export FAV</button>
     </div>
+    <div id="canvas"></div>
     <script src="js/XMLWriter-1.0.0-min.js"></script>
     <script src="js/FileSaver.js"></script>
     <script src="js/three.min.js"></script>
@@ -49,16 +51,24 @@
       }
 
 			function init() {
-				container = document.createElement('div');
-				document.body.appendChild(container);
+				container = document.getElementById('canvas');
 
-				camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 1, 15);
-				camera.position.set(3, 0.15, 3);
+				camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 15);
+				camera.position.set(2, 1, 2);
         controls = new THREE.OrbitControls(camera);
 
 				scene = new THREE.Scene();
-				scene.background = new THREE.Color(0x72645b);
-				scene.fog = new THREE.Fog(0x72645b, 2, 15);
+				scene.background = new THREE.Color(0x999999);
+				scene.fog = new THREE.Fog(0x999999, 2, 15);
+
+
+        // Helpers
+
+        var axesHelper = new THREE.AxesHelper(2);
+        scene.add(axesHelper);
+
+        var gridHelper = new THREE.GridHelper(1, 1 / voxSize);
+        scene.add(gridHelper);
 
 
         // Ground
@@ -68,8 +78,8 @@
 					new THREE.MeshPhongMaterial({color: 0x999999, specular: 0x101010})
 				);
 				plane.rotation.x = - Math.PI / 2;
-				plane.position.y = - 0.5;
-        plane.receiveShadow = true;
+        plane.position.y = - 0.001;
+        plane.receiveShadow = false;
 				scene.add(plane);
 
 
@@ -97,27 +107,31 @@
 
 				var loader = new THREE.FAVLoader();
 				loader.load('data/ChessKing_Color_reso1_v1.fav', function (volumeList) {
-          for (var voxels of volumeList) {
+          for (var volume of volumeList) {
             var geometry = new THREE.BoxGeometry(voxSize, voxSize, voxSize);
-            var material = new THREE.MeshPhongMaterial({color:0xaaaaaa});
             var cubeGroup = new THREE.Group();
 
-            for (var i = 0; i < voxels.data.length; i++) {
-              var pos = voxels.data[i];
+            for (var i = 0; i < volume.voxels.length; i++) {
+              var position = volume.voxels[i];
+              var material = new THREE.MeshPhongMaterial({color: '#' + volume.colors[i]});
               var cube = new THREE.Mesh(geometry, material);
-              cube.position.set(pos[0]*voxSize, pos[1]*voxSize, pos[2]*voxSize);
+              cube.position.set(
+                (position[0] + 0.5) * voxSize,
+                (position[1] + 0.5) * voxSize,
+                (position[2] + 0.5) * voxSize);
               cube.castShadow = true;
         			cube.receiveShadow = true;
               cubeGroup.add(cube);
             }
 
-            cubeGroup.position.set(0, -0.5, 0);
+            cubeGroup.position.z = volume.dimension.y * voxSize;
             cubeGroup.rotation.set(deg2rad(-90), 0, 0);
             scene.add(cubeGroup);
             objects.push({
               'cubeGroup': cubeGroup,
-              'dimension': voxels.dimension
+              'dimension': volume.dimension
             });
+            console.log(volume.dimension);
           }
 				});
 
@@ -126,7 +140,7 @@
 
 				scene.add(new THREE.HemisphereLight(0x443333, 0x111122));
 				addShadowedLight(1, 1, 1, 0xffffff, 1.35);
-				addShadowedLight(0.5, 1, - 1, 0xffaa00, 1);
+				addShadowedLight(0.5, 1, - 1, 0xaaaaaa, 1);
 
 
         // Renderer
