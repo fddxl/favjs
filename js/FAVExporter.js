@@ -88,7 +88,7 @@ THREE.FAVExporter.prototype = {
 
     xml.writeStartDocument();
     xml.writeStartElement('fav');
-    xml.writeAttributeString('version', '1.0');
+    xml.writeAttributeString('version', '1.1a');
     {
       xml.writeStartElement('metadata');
       {
@@ -141,12 +141,9 @@ THREE.FAVExporter.prototype = {
             xml.writeEndElement(); // end url
           }
           xml.writeEndElement(); // end product_info
-          xml.writeStartElement('iso_standard');
-          {
-            xml.writeElementString('iso_id', 'ISO 1043-1:2006');
-            xml.writeElementString('iso_name', 'ABS');
-          }
-          xml.writeEndElement(); // end iso_standard
+          xml.writeStartElement('standard_name');
+          xml.writeCDATA('ISO 1043-1:2006 ABS');
+          xml.writeEndElement(); // end standard_name
         }
         xml.writeEndElement(); // end material
       }
